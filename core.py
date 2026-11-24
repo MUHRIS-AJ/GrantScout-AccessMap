@@ -5,7 +5,8 @@ from transport import request_json, SourceError
 
 SERVICES = ["GrantScout","AccessMap"]
 GRANTS="https://api.grants.gov/v1/api/search2"
-OSM="https://overpass-api.de/api/interpreter"
+OSM="https://overpass.private.coffee/api/interpreter"
+OSM_FALLBACK="https://overpass-api.de/api/interpreter"
 
 def grants(keyword: str):
     if not isinstance(keyword,str) or not 2 <= len(keyword.strip()) <= 120:
@@ -35,7 +36,12 @@ def accessibility(location: str):
     lat,lon=map(float,match.groups())
     if not -90<=lat<=90 or not -180<=lon<=180:raise ValueError("Coordinates out of range.")
     query=f'[out:json][timeout:15];nwr(around:1500,{lat:.5f},{lon:.5f})["wheelchair"];out center 25;'
-    data=request_json(OSM,params={"data":query})
+    try:
+        data=request_json(OSM,params={"data":query})
+        overpass_source=OSM
+    except SourceError:
+        data=request_json(OSM_FALLBACK,params={"data":query})
+        overpass_source=OSM_FALLBACK
     rows=[]
     for e in (data.get("elements") or [])[:25]:
         tags=e.get("tags") or {}
@@ -48,7 +54,7 @@ def accessibility(location: str):
                      "source_url":f'https://www.openstreetmap.org/{e.get("type","node")}/{e["id"]}',
                      "on_site_verified":False})
     return {"project":"AccessMap","location":location,"places":rows,"count":len(rows),
-            "source":"OpenStreetMap via Overpass","agents":["Discover OSM wheelchair tags","Normalize mapped places",
+            "source":"OpenStreetMap via Overpass", "overpass_endpoint":overpass_source,"agents":["Discover OSM wheelchair tags","Normalize mapped places",
             "Verify map provenance","Report mapped evidence"],
             "limitations":["Crowdsourced tags may be outdated, missing or incorrect.",
                            "Wheelchair tag alone does not establish complete accessibility.",
