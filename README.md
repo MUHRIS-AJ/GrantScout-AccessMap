@@ -24,3 +24,6 @@ python server.py
 Local dashboard: http://localhost:8765. Optional remote MCP: `fastmcp run server.py:mcp --transport http --port 8000` (secure before exposing).
 
 Specialists: discover public records → extract comparable fields → verify provenance and limitations → report. This is **a rule-based multi-stage prototype**, not autonomous AI.
+
+### Upstream reliability
+AccessMap tries a community-operated public Overpass endpoint and then the shared OpenStreetMap Overpass instance. Coverage and uptime vary. Every returned tag is crowdsourced and must be verified on site.
